@@ -345,7 +345,7 @@ D:\Codex test\xcx\
 │  ├─ config.test.js：模式选择、Publishable白名单及Vercel构建配置
 │  └─ ui.test.js：本地模式提示与云端隐藏重置的回归
 ├─ tools\
-│  ├─ server.js：保留的旧本地工具，不作为公网生产服务器
+│  ├─ server.js：旧静态服务退役指引，提示改用Vite后退出
 │  ├─ check.js：JavaScript 语法检查
 │  └─ seed.js：生成种子；--check 只读核对固定快照一致性
 ├─ README.md：启动、数据库配置、20 项操作及故障处理
@@ -437,7 +437,7 @@ Preview 或其他部署可能启用 Deployment Protection。发给朋友前检�
 
 当前角色页面在同一入口切换，URL 为根路径，没有 `/admin`、`/sessions` 或 `/profile` 的客户端路径路由。`vercel.json` 不添加 SPA rewrites；这些地址不是受支持的直达页面，应从根入口使用导航。服务可能对未知路径返回首页或404，不能仅凭状态码判定路由或源码保护是否正确。未来实际加入路径路由时才增加对应 fallback。
 
-旧 `tools/server.js` 仅为本地保留工具，不作为手机公网服务器。不要把开发服务、`vite preview` 或整个源码目录暴露为正式站点。
+旧 `tools/server.js` 已退役，直接执行只会提示使用 `npm run dev` 并退出。不要把开发服务、`vite preview` 或整个源码目录暴露为正式站点。
 
 ### 13.4 发布后验收与当前状态
 

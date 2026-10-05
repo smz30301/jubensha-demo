@@ -80,7 +80,7 @@
 - `js/api.js`、`js/app.js`、`js/ui.js`、`js/pages.js`：统一数据适配器、网络状态反馈和重复提交防护、原生手机抽屉/焦点、44px菜单、本设备Demo提示、云端隐藏重置。
 - `css/main.css`、`css/admin.css`、`css/mobile.css`：移动安全区、抽屉、按钮、单列表单与长结算弹窗、卡片和溢出处理。
 - `tests/api.test.js`、`tests/config.test.js`、`tests/ui.test.js`：新配置、重试、模式与界面权限回归，保留原业务测试。
-- `tools/check.js`、`tools/server.js`：根配置语法检查及旧本地服务私有文件保护。
+- `tools/check.js`、`tools/server.js`：根配置语法检查及旧静态服务退役指引。
 - `README.md`、`PROJECT_BRIEF.md`、`PAGE_MAP.md`、`DATA_MAP.md`、`CHANGELOG.md`：运行、部署、目录分类与真实验收结果同步。
 
 ### 最终检查
