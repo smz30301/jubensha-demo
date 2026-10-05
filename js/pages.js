@@ -1,0 +1,74 @@
+import {esc,money,today,month,monthEnd,formatTime,label,sum} from './utils.js';
+import {btn,badge,empty,stats,table,panel,cover,field,select} from './ui.js';
+import {finance,wages} from './finance.js';
+export const adminNav=[['dashboard','工作台'],['sessions','场次管理'],['recruitment','拼场管理'],['players','玩家管理'],['members','会员与余额'],['dms','DM管理'],['scripts','剧本管理'],['finance','财务统计'],['wages','工资统计'],['settings','门店设置']];
+export const dmNav=[['dashboard','工作台'],['sessions','我的场次'],['wages','我的提成']];
+export const playerNav=[['home','首页'],['recruitment','拼场'],['scripts','剧本'],['community','社区'],['profile','我的']];
+export const platformNav=[['dashboard','平台概览'],['merchants','商家订阅'],['stores','门店列表'],['scripts','公共剧本库'],['reports','帖子举报']];
+export const find=(db,t,id)=>db[t].find(r=>r.id===id);
+export const uname=(db,id)=>find(db,'users',id)?.nickname||'已归档玩家';
+export const bname=(db,id)=>find(db,'scripts',id)?.name||'未知剧本';
+export function recruitmentCard(db,s){const n=(db.participant_counts?.[s.id]??db.session_participants.filter(p=>p.session_id===s.id).length);return `<article class="recruit-card"><div class="recruit-mark">${esc(bname(db,s.script_id).slice(0,1))}</div><div><div class="inline"><h3>《${esc(bname(db,s.script_id))}》</h3>${badge(s.status)}</div><p>${esc(s.date)} ${esc(s.time)} · ${esc(uname(db,s.dm_id))}</p><p>${esc(find(db,'stores',s.store_id)?.name)}</p><div class="inline"><strong>${n} / ${s.expected}人</strong><span>${money(s.price)}/人</span>${btn('查看详情','session_detail',s.id)}</div></div></article>`;}
+export function sessionTable(db,rows){return table(['剧本 / 时间','DM','人数','参考价格','状态','操作'],rows.map(s=>[`<strong>${esc(bname(db,s.script_id))}</strong><small>${esc(s.date)} ${esc(s.time)}</small>`,esc(uname(db,s.dm_id)),`${(db.participant_counts?.[s.id]??db.session_participants.filter(p=>p.session_id===s.id).length)} / ${s.expected}`,money(s.price),badge(s.status),btn('详情','session_detail',s.id)]));}
+const ledgerTable=(db,rows)=>table(['时间','玩家','类型 / 备注','变动','操作前余额','操作后余额','操作人'],rows.slice().reverse().map(t=>[esc(formatTime(t.created_at)),esc(uname(db,t.user_id)),`${esc(label[t.type])}<small>${esc(t.note)}</small>`,`<span class="${t.delta<0?'negative':'positive'}">${t.delta>0?'+':''}${money(t.delta)}</span>`,money(t.before_balance),money(t.after_balance),esc(uname(db,t.operator_id))]));
+export function renderPage(db,c,page,filters={},cloud=false){
+  const modeNote=`<p class="data-mode-note">${cloud?'当前为 Supabase 数据库模式，已登录账号通过授权门店共享数据。':'当前为本地演示模式，数据仅保存在本设备。DEMO ONLY'}</p>`;
+  const reset=cloud?'':btn('重置演示数据','reset','','danger-outline');
+  const store=find(db,'stores',c.store_id),isPlayer=c.role==='player',isDM=c.role==='dm',isPlatform=c.role==='platform';
+  const sessions=db.sessions.filter(s=>s.store_id===c.store_id&&(!isDM||s.dm_id===c.user_id));
+  const staff=db.store_members.filter(m=>m.store_id===c.store_id&&m.role==='dm');
+  if(page==='dashboard'){
+    if(isPlatform)return stats([['商家',db.merchants.length],['门店',db.stores.length],['公共剧本',db.scripts.length],['待处理举报',db.reports.filter(r=>r.status==='pending').length]])+panel('商家与订阅',table(['商家','服务状态','到期时间'],db.merchants.map(m=>[esc(m.name),badge(m.status),esc(m.expires_on)])));
+    const f=finance(db,{store_id:c.store_id,from:month()+'-01',to:monthEnd()}),w=wages(db,c.store_id,month(),isDM?c.user_id:null);
+    return `<div class="welcome"><div><h1>${isDM?'今天也带来一个好故事。':'让每一场故事，有据可循。'}</h1><p>${esc(store.name)} · ${today()} · ${isDM?'只展示本人场次与提成':'门店运营概览'}</p></div>${btn(isDM?'录入场次':'创建场次','new_session','','primary')}</div>`+stats(isDM?[['今日待开场',sessions.filter(s=>s.date===today()&&['confirmed','recruiting'].includes(s.status)).length],['本月已开场',w.count,'有效完成场次'],['本月预计提成',money(w.total),'包含补贴与扣款']]:[['本月已开场',f.count,'已完成且未作废'],['本月营业额',money(f.revenue),'按场次实际消费统计'],['当前拼场',sessions.filter(s=>s.status==='recruiting').length,'等待玩家加入'],['预计DM提成',money(w.base),'结算时生成快照']])+panel('今日场次',sessionTable(db,sessions.filter(s=>s.date===today())))+(isDM?'':`<div class="columns">${panel('最近拼场报名',applicationTable(db,db.recruitment_applications.filter(a=>sessions.some(s=>s.id===a.session_id)).slice(-5)))}${panel('最近余额操作',ledgerTable(db,db.balance_transactions.filter(t=>t.store_id===c.store_id).slice(-5)))}</div>`)+panel('最近完成场次',sessionTable(db,sessions.filter(s=>s.status==='completed').slice(-5)));
+  }
+  if(page==='sessions')return `<div class="toolbar">${select('状态','status',[['','全部'],...['draft','recruiting','confirmed','completed','cancelled','voided'].map(s=>[s,label[s]])],filters.status)}${field('日期','date','date',filters.date||'')}${btn('创建场次','new_session','','primary')}</div>`+panel('场次列表',sessionTable(db,sessions.filter(s=>(!filters.status||s.status===filters.status)&&(!filters.date||s.date===filters.date)).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time))));
+  if(page==='recruitment'){
+    const recruitment=db.sessions.filter(s=>s.type==='recruitment'&&(!isPlayer?s.store_id===c.store_id:s.status==='recruiting'));
+    const selectedCity=filters.city!==undefined?filters.city:isPlayer?c.city||'青岛市':'';
+    const filtered=recruitment.filter(s=>(!selectedCity||find(db,'stores',s.store_id)?.city===selectedCity)&&(!filters.date||s.date===filters.date)&&(!filters.store||s.store_id===filters.store)&&(!filters.type||find(db,'scripts',s.script_id)?.type===filters.type));
+    return `<div class="toolbar">${select('城市','city',[['','全部城市'],...Array.from(new Set(db.stores.map(s=>s.city))).map(city=>[city,city])],selectedCity)}${field('日期','date','date',filters.date||'')}${select('门店','store',[['','全部门店'],...db.stores.map(s=>[s.id,s.name])],filters.store)}${select('类型','type',[['','全部类型'],...['推理','情感','欢乐'].map(x=>[x,x])],filters.type)}${!isPlayer?btn('创建拼场','new_recruitment','','primary'):''}</div>`+(filtered.length?`<div class="cards">${filtered.map(s=>recruitmentCard(db,s)).join('')}</div>`:empty('没有符合条件的拼场'))+(!isPlayer?panel('报名管理',applicationTable(db,db.recruitment_applications.filter(a=>recruitment.some(s=>s.id===a.session_id)))):'');
+  }
+  if(['players','members'].includes(page)){
+    const rows=db.store_customers.filter(r=>r.store_id===c.store_id).filter(r=>{const u=find(db,'users',r.user_id);return !filters.q||(u?.nickname+u?.phone).includes(filters.q);});
+    return `<div class="toolbar">${field('搜索昵称 / 手机号','q','search',filters.q||'')}${btn('新增玩家','new_player','','primary')}</div>`+panel(page==='players'?'玩家档案':'会员与余额',table(['玩家','会员状态','到期日期','余额','操作'],rows.map(r=>[esc(uname(db,r.user_id)),badge(r.is_member&&r.expires_on>=today()?'有效会员':'普通玩家'),esc(r.expires_on||'—'),money(r.balance),btn('查看详情','player_detail',r.user_id)+btn('会员','member',r.user_id)+btn('余额操作','balance',r.user_id,'danger-outline')])));
+  }
+  if(page==='dms')return panel('本店DM',table(['DM','开本权限','提成规则','操作'],staff.map(m=>{const rule=db.commission_rules.find(r=>r.dm_id===m.user_id&&r.store_id===c.store_id);return [esc(uname(db,m.user_id)),badge(m.active?'启用':'停用'),esc(label[rule?.kind]||'未设置'),btn('详情','dm_detail',m.user_id)+btn('提成规则','rule',m.user_id)+btn(m.active?'停用权限':'启用权限','dm_permission',m.id,'danger-outline')];})))+panel('规则说明','<p>规则修改只影响之后结算的场次。历史场次保存规则快照，不重新计算。</p>');
+  if(page==='scripts'){
+    let rows=db.scripts.filter(b=>(!filters.type||b.type===filters.type)&&(!filters.players||b.players===Number(filters.players))&&(!filters.duration||b.duration===Number(filters.duration))&&(!filters.difficulty||b.difficulty===filters.difficulty));
+    return `<div class="toolbar">${select('人数','players',[['','全部'],...['5','6','7'].map(x=>[x,x+'人'])],filters.players)}${select('类型','type',[['','全部'],...['推理','情感','欢乐'].map(x=>[x,x])],filters.type)}${select('时长','duration',[['','全部'],['4','4小时'],['5','5小时']],filters.duration)}${select('难度','difficulty',[['','全部'],...['入门','进阶','困难'].map(x=>[x,x])],filters.difficulty)}</div><div class="script-grid">${rows.map(b=>{const own=db.store_scripts.find(r=>r.store_id===c.store_id&&r.script_id===b.id);return `<article class="script-card">${cover(b)}<div class="script-body"><h3>${esc(b.name)}</h3><p>${b.players}人 · ${b.duration}小时 · ${esc(b.difficulty)}</p>${btn('详情','script_detail',b.id)}${c.role==='admin'?btn(own?'门店设置':'添加到本店','store_script',b.id):''}</div></article>`;}).join('')}</div>`;
+  }
+  if(page==='finance'){
+    const f=finance(db,{store_id:c.store_id,...filters});
+    return `<div class="toolbar">${field('开始日期','from','date',filters.from||month()+'-01')}${field('结束日期','to','date',filters.to||monthEnd())}${select('DM','dm_id',[['','全部'],...staff.map(m=>[m.user_id,uname(db,m.user_id)])],filters.dm_id)}${select('剧本','script_id',[['','全部'],...db.scripts.map(b=>[b.id,b.name])],filters.script_id)}${select('支付方式','method',[['','全部'],...['wechat','alipay','cash','balance','other'].map(x=>[x,label[x]])],filters.method)}</div>`+stats([['有效场次',f.count],['玩家人次',f.players],['应收金额',money(f.due)],['实际消费',money(f.revenue)]])+panel('场次消费收入',table(['微信','支付宝','现金','余额','其他','优惠'],[[f.wechat,f.alipay,f.cash,f.balance,f.other,f.discount].map(money)]))+panel('充值资金流入',`<strong class="large">${money(f.recharge)}</strong><p>充值单独统计，不与场次消费收入相加。支付方式筛选按包含该方式的场次展示完整消费；所选方式收款为 ${money(f.selectedPayments)}。</p>`);
+  }
+  if(page==='wages'){
+    const period=filters.month||month(),dms=isDM?[{user_id:c.user_id}]:staff;
+    return `<div class="toolbar">${field('月份','month','month',period)}</div>`+panel(isDM?'我的提成':'预计应发工资',table(['DM','有效场次','场次提成','补贴','扣款','预计应发','操作'],dms.map(m=>{const w=wages(db,c.store_id,period,m.user_id);return [esc(uname(db,m.user_id)),w.count,money(w.base),money(w.subsidy),money(w.deduction),`<strong>${money(w.total)}</strong>`,btn('明细','wage_detail',m.user_id)+(isDM?'':btn('补贴 / 扣款','wage',m.user_id))];})))+panel('计算口径','<p>只计入已完成且未作废场次。历史提成不可手动改写；其他补贴、扣款单独留存。</p>');
+  }
+  if(page==='settings')return panel('门店资料',`<h3>${esc(store.name)}</h3><p>${esc(store.intro)}</p><p>${esc(store.address)} · ${esc(store.hours)}</p>${btn('编辑门店','edit_store','','primary')}${btn('门店社区回复','nav','community')}`)+panel('数据与审计',modeNote+btn('查看审计日志','audits')+btn('导出当前可见数据','export')+reset);
+  if(page==='home'){
+    const city=c.city||'青岛市',stores=db.stores.filter(s=>s.city===city);
+    const gatherings=db.sessions.filter(s=>s.status==='recruiting'&&stores.some(store=>store.id===s.store_id)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
+    const next=gatherings[0],news=db.store_scripts.filter(s=>s.visible&&s.is_new&&stores.some(store=>store.id===s.store_id));
+    const newScripts=db.scripts.filter(b=>news.some(s=>s.script_id===b.id));
+    return `<div class="player-hero"><div><p>${esc(city)} · 找到下一场好故事</p><h1>故事开场，<br>就差你了。</h1><p>和同频的人，赴一场未知的约。</p>${btn('发现拼场','nav','recruitment','primary')}</div><div class="hero-ticket"><small>下一场故事</small><strong>${esc(next?bname(db,next.script_id):'待开场')}</strong><span>${next?esc(next.time)+' / '+next.expected+'人':'切换城市发现更多'}</span></div></div>`+
+      panel('正在拼场',gatherings.length?`<div class="cards">${gatherings.slice(0,2).map(s=>recruitmentCard(db,s)).join('')}</div>`:empty('此城市暂无拼场，可切换城市查看。'),btn('查看全部','nav','recruitment'))+
+      panel('推荐门店',stores.length?`<div class="cards">${stores.map(s=>`<article class="store-card"><div class="store-image" role="img" aria-label="门店环境占位">故事空间</div><h3>${esc(s.name)}</h3><p>${esc(s.intro)}</p>${btn('探索门店','store_detail',s.id)}</article>`).join('')}</div>`:empty('此城市暂无测试门店'))+
+      panel('新本速递',newScripts.length?`<div class="script-grid">${newScripts.map(b=>`<article>${cover(b)}${btn('查看剧本','script_detail',b.id)}</article>`).join('')}</div>`:empty('暂无新本'))+
+      panel('门店活动',stores.map(s=>`<p><strong>${esc(s.name)}</strong>：${esc(s.activity)}</p>`).join('')||empty('暂无门店活动'));
+  }
+  if(page==='profile'){
+    const workspaces=db.available_contexts||db.store_members.filter(m=>m.user_id===c.user_id&&m.active).map(m=>({role:m.role,store_id:m.store_id}));
+    const accounts=db.store_customers.filter(r=>r.user_id===c.user_id),applications=db.recruitment_applications.filter(r=>r.user_id===c.user_id);
+    return `<div class="profile-head"><div class="avatar">${esc(uname(db,c.user_id).slice(0,1))}</div><div><h1>${esc(uname(db,c.user_id))}</h1><p>${esc(find(db,'users',c.user_id)?.city||'青岛市')} · 每次开本都是新体验</p></div></div>`+`<div class="quick-links">${btn('我的拼场','my_recruitment')}${btn('我的会员','my_members')}${btn('我的余额','my_balance')}${btn('我的收藏','my_favorites')}${btn('我的帖子','my_posts')}${workspaces.filter(w=>['dm','admin'].includes(w.role)).map(w=>btn(w.role==='dm'?'DM工作台':'门店管理','workspace',w.role+'|'+w.store_id)).join('')}</div>`+panel('门店会员与余额',table(['门店','会员','到期日期','余额','流水'],accounts.map(r=>[esc(find(db,'stores',r.store_id)?.name),badge(r.is_member&&r.expires_on>=today()?'有效会员':'普通玩家'),esc(r.expires_on||'—'),money(r.balance),btn('查看流水','my_ledger',r.store_id)])))+panel('我的拼场',applicationTable(db,applications,true))+panel('历史场次',sessionTable(db,db.sessions.filter(s=>db.session_participants.some(p=>p.session_id===s.id&&p.user_id===c.user_id))))+panel('数据操作',modeNote+btn('导出当前可见数据','export')+reset);
+  }
+  if(page==='community')return `<div class="toolbar"><p>理性分享体验，请勿发布他人隐私。</p>${btn('发布帖子','new_post','','primary')}</div><div class="post-grid">${db.posts.filter(p=>!p.hidden&&(c.role!=='admin'||p.store_id===c.store_id)).map(p=>postCard(db,c,p)).join('')}</div>`;
+  if(page==='merchants')return panel('商家订阅',table(['商家','服务状态','服务到期','操作'],db.merchants.map(m=>[esc(m.name),badge(m.status),esc(m.expires_on),btn('设置订阅','merchant',m.id)])));
+  if(page==='stores')return panel('门店列表',table(['门店','品牌','城市','操作'],db.stores.map(s=>[esc(s.name),esc(find(db,'merchants',s.merchant_id)?.name),esc(s.city),btn('详情','store_detail',s.id)])));
+  if(page==='reports')return panel('帖子举报',table(['帖子','原因','状态','处理'],db.reports.map(r=>[esc(find(db,'posts',r.post_id)?.title),esc(r.reason),badge(r.status),r.status==='pending'?btn('下架帖子','hide_post',r.id,'danger-outline')+btn('驳回','dismiss_report',r.id):'已处理'])));
+  return empty('请选择一个功能');
+}
+export function applicationTable(db,rows,player=false){return table(['剧本','报名玩家','状态','操作'],rows.slice().reverse().map(r=>[esc(bname(db,find(db,'sessions',r.session_id)?.script_id)),esc(r.nickname),badge(r.status),player?esc(r.status==='pending'?'等待门店确认':r.status==='confirmed'?'已上车':'已拒绝'):r.status==='pending'?btn('确认上车','confirm_application',r.id,'primary')+btn('拒绝','reject_application',r.id):'已处理']));}
+export function postCard(db,c,p){return `<article class="post-card"><div class="post-placeholder">${esc(p.type)}</div><div class="post-body"><small>${esc(uname(db,p.user_id))} · ${esc(p.type)}</small><h3>${esc(p.title)}</h3><p>${esc(p.body)}</p><div class="actions">${btn('赞 '+db.likes.filter(r=>r.target_id===p.id).length,'like',p.id)}${btn(db.favorites.some(r=>r.target_id===p.id&&r.user_id===c.user_id)?'已收藏':'收藏','favorite_post',p.id)}${btn('评论','post_detail',p.id)}${btn('举报','report',p.id)}</div></div></article>`;}
+export {ledgerTable};
