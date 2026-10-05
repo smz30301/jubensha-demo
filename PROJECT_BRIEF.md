@@ -2,7 +2,7 @@
 
 ## 目标
 
-“剧场账本”是浏览器运行的剧本杀门店管理概念验证版，用于 1～2 家熟悉门店试验核心操作体验。保留现有业务和界面，增加生产构建、手机操作和 Vercel HTTPS 部署准备。交付包含可录入、查看、修改并持久保存的应用，不是微信小程序正式版。
+“剧场账本”是浏览器运行的剧本杀门店管理概念验证版，用于 1～2 家熟悉门店试验核心操作体验。保留现有业务和界面，以GitHub Actions + Pages发布HTTPS演示，让手机访客无需GitHub或Vercel登录即可进入。交付包含可录入、查看、修改并持久保存的应用，不是微信小程序正式版。
 
 ## 技术与模式
 
@@ -10,15 +10,15 @@
 | --- | --- |
 | 前端 | HTML5、CSS3、原生 JavaScript ES Modules |
 | 开发与构建 | Vite；`npm run dev / build / preview`；原生 JavaScript，不增加前端框架 |
-| 公网托管 | Vercel 部署 `dist`；开发和 preview 服务不承担公网生产访问 |
+| 公网托管 | GitHub Actions检查并构建，仅`dist`部署到Pages；保留Vercel备用配置 |
 | 本地模式 | 浏览器 localStorage；无密码演示身份；副本校验后一次提交 |
 | 云端模式 | Supabase Auth、PostgreSQL 业务表、RLS、受检事务 RPC |
 | 金额 | 整数分，页面元输入；不以浮点数保存财务金额 |
 | 校验 | JavaScript 语法检查、Node test runner 核心业务测试、浏览器流程验收 |
 
-本地模式数据与云端独立。优先从 `.env.local` 或 Vercel 构建环境读取 `VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY`。两项为空时为 DEMO ONLY，两项完整有效时使用云端，只填一项或 key 类型错误则报错，不自动回退。本地身份和页面保存在 sessionStorage，数据保存在 localStorage；云端以 Auth 用户及服务器权限访问共享数据库。
+本地模式数据与云端独立。从`.env.local`或GitHub Actions Variables读取`VITE_SUPABASE_URL`、`VITE_SUPABASE_PUBLISHABLE_KEY`。两项为空时为 DEMO ONLY，两项完整有效时使用云端，只填一项或 key 类型错误则报错，不自动回退。本地身份和页面保存在 sessionStorage，数据保存在 localStorage；云端以 Auth 用户及服务器权限访问共享数据库。
 
-localStorage 按设备、浏览器和 origin 分离，公网地址不会使本地数据共享。只有同一 Supabase 项目中的获授权数据库数据可以跨设备读取。所有 `VITE_` 配置可被浏览器获取，只能放公开值；改生产环境变量后需重建部署。
+localStorage 按设备、浏览器和 origin 分离，公网地址不会使本地数据共享，同origin不同路径也不会自动隔离数据。只有同一 Supabase 项目中的获授权数据库数据可以跨设备读取。接受的`VITE_SUPABASE_`配置公开写入客户端；改生产构建变量后需重建部署。
 
 ## 产品范围
 
@@ -66,7 +66,7 @@ localStorage 按设备、浏览器和 origin 分离，公网地址不会使本�
 
 本地模式八阶段核心页面和业务链路已验收，20 项操作通过；29 项自动化测试、语法、种子一致性和 HTTP 检查通过。演示数据已恢复初始值。真实 Supabase 联调未执行；记录与证据见 `_artifacts/verification.md` 和 `CHANGELOG.md`。
 
-## 本轮公开测试范围与结果（2026-10-05）
+## 历史 Vite 公开测试准备与结果（2026-10-05）
 
 保留原业务模块；完善 Vite 打包、配置白名单、Git 忽略和手机导航/表单/安全区，补充构建、指定视口及约 390px 核心流程检查。部署目标为 Vercel，使用 `npm ci`、`npm run build`、`dist`，不新增路径路由、业务模块或 PWA。
 
@@ -76,4 +76,16 @@ Vite生产构建通过，17个模块，无构建警告；40项自动化测试、
 
 在4173生产预览中，375/390/430/768/1024/1440px六种宽度和五类关键视图无整页水平溢出，手机抽屉焦点与关闭行为通过。390px结算、重复点击防护、充值、会员、拼场确认、提成快照、作废恢复及刷新持久化通过，浏览器0警告/错误。测试后恢复初始演示数据。
 
-源码与配置可提交，dist为生成产物，验收报告/截图/日志为独立附件，修改前备份不提交。Git远程为空、未推送；gh/vercel不在PATH，Vercel浏览器会话跳转登录页，未公开发布。真实数据库与公网部署仍属未执行的外部联调步骤。
+该阶段源码与配置可提交，dist为生成产物，验收报告/截图/日志为独立附件，修改前备份不提交。阶段结束时Git远程为空、未推送，gh/vercel不在PATH，Vercel会话跳转登录页，未公开发布；当前远程和发布状态以下述Pages阶段为准。
+
+## GitHub Pages 公开演示（2026-10-05）
+
+已有Public仓库为[smz30301/jubensha-demo](https://github.com/smz30301/jubensha-demo)，本地origin已绑定。Public仓库源码公开；Pages只部署dist，不将SQL、测试和文档作为站点文件上传。预期网址为`https://smz30301.github.io/jubensha-demo/`，当前尚未验证发布。访客目标入口是四种无密码DEMO ONLY身份卡片，仓库所有者的GitHub认证与访客访问分开。
+
+新增`.github/workflows/deploy-pages.yml`，main推送或手动运行触发Node24的npm ci/check/test/build及Pages部署。构建前读取Pages元数据，再通过非客户端变量`PAGES_BASE_PATH`提供仓库前缀；开发固定根路径，普通无变量构建/预览仍为根路径，当前Pages使用`/jubensha-demo/`，业务代码不固定仓库名。保留`vercel.json`和两项空值`.env.example`。
+
+本地npm ci、语法检查及45/45测试通过；普通根路径和Pages子路径构建均通过，子路径构建17模块、无警告。开发根入口、子路径生产预览及两个资源HTTP200、无跳转；dist仅三个站点文件，私有路径不返回对应源码。375/390/430px实测四类页面无横向溢出，抽屉焦点与长结算按钮可触达，控制台0警告/错误；未保存新结算。main可达提交历史与本地文本敏感模式检查通过，无关材料不提交。
+
+当前尚未推送，也未验证Actions部署和匿名HTTPS；真实Safari、微信手机浏览器及Supabase共享数据未实测。两项公开云端配置为空，网站使用本设备演示，接入云端需先建立Supabase项目并完成Auth/RLS流程。
+
+本次范围为工作流、Vite基础路径、5项路径测试和五份文档，共8个文件，不调整业务、UI或数据模型。修改前备份为`_artifacts/backups/before-github-pages-20261005-152506/`；本次报告、日志和截图使用`_artifacts/github-pages-verification.md`、`_artifacts/github-pages-logs/`、`_artifacts/github-pages-screenshots/`。

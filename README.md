@@ -4,6 +4,8 @@
 
 默认运行本地演示模式。Supabase 模式提供真实表结构和受权限校验的事务 RPC，需要先创建数据库并绑定 Auth 账号。当前尚未创建 Supabase 项目，本轮完成接入准备，真实云端部署与跨设备联调在项目创建后按第 6 节执行。
 
+当前公网方案为已有 Public 仓库 [smz30301/jubensha-demo](https://github.com/smz30301/jubensha-demo) 的 GitHub Actions + Pages，配置步骤见第 15 节。目标是让手机访客通过 HTTPS 直接进入演示身份入口，无需 GitHub 或 Vercel 登录；预期地址尚未核实发布。
+
 ## 1. 安装、开发与手机测试
 
 在 Windows PowerShell 中执行以下命令。执行目录为 `D:\Codex test\xcx`；用途是检查 Node.js 环境、安装锁定的构建依赖并启动 Vite 开发服务。
@@ -62,7 +64,7 @@ npm run build
 npm run preview
 ```
 
-成功构建后产物在 `D:\Codex test\xcx\dist\`。浏览器打开预览命令打印的地址，默认预览端口为 4173。`vite preview` 仅用于本地检查，不是正式公网服务器；公网部署使用第 13 节的 Vercel 步骤。参考：[Vite 静态部署说明](https://vite.dev/guide/static-deploy.html)。
+成功构建后产物在 `D:\Codex test\xcx\dist\`。浏览器打开预览命令打印的地址，默认预览端口为 4173。`vite preview` 仅用于本地检查；公网部署使用第 15 节的 GitHub Pages 步骤。未设置 `PAGES_BASE_PATH` 时，构建及预览使用 `/`；开发服务始终使用 `/`。参考：[Vite 静态部署说明](https://vite.dev/guide/static-deploy.html)。
 
 ## 2. 身份与测试数据
 
@@ -213,7 +215,7 @@ VITE_SUPABASE_PUBLISHABLE_KEY=
 
 切回本地模式：清空两项本地配置并重启开发服务；若还有旧配置别名，也必须一并清空。两种模式数据独立，配置切换不会迁移 localStorage 数据。正式测试网站优先配置 Supabase，共享的是数据库中受账号权限控制的数据。
 
-**所有 `VITE_` 变量都会进入客户端 bundle，任何访问者都可读取。** 禁止创建 `VITE_SUPABASE_SECRET_KEY`、`VITE_SERVICE_ROLE_KEY`，也禁止放入数据库密码或个人 access token。将敏感信息放在 Vercel 环境变量中再加 `VITE_` 前缀，同样会泄露到浏览器。生产配置在构建时写入产物：更改 Vercel 变量后必须重新部署，已有部署不会自动换配置。参考：[Vite 环境变量说明](https://vite.dev/guide/env-and-mode)。
+**公开 `VITE_SUPABASE_` 配置会写入客户端 bundle，任何访问者都可读取。** 项目只接受规定的公开配置，不填写 Secret / Service Role Key、数据库密码或个人 access token。将秘密放在托管平台环境变量中，也不能使客户端配置成为保密数据。生产配置在构建时写入产物：更改 GitHub Actions Variables 或其他平台的构建变量后必须重新构建部署。参考：[Vite 环境变量说明](https://vite.dev/guide/env-and-mode)。
 
 公开 API key 并不提供管理员权限；本项目仍要求 Auth 登录，由服务器校验角色。公开 key 仅放在 `apikey` 请求头，登录后以用户 access token 作为 Bearer JWT。会话保存在 sessionStorage，401 时刷新一次 token；遇网络或数据库错误不会自动重发财务写入，避免重复提交。参考：[Supabase API keys 官方说明](https://supabase.com/docs/guides/getting-started/api-keys)。
 
@@ -300,11 +302,14 @@ npm run build
 | 月度统计与初始数据说明不同 | 跨月、已修改数据或云端种子日期固定；检查筛选月份和历史记录 |
 | 表格超出手机宽度 | 表格区域允许水平滚动；按钮和输入框应仍可点击；后台可用“菜单”进入页面 |
 | 构建提示 Node.js 版本不支持 | 核对 `package.json` 的 engines 与所装 Node.js；升级前需确认，不删除测试或降级安全校验来绕过 |
+| Pages部署白屏或资源404 | 核对访问路径含`/jubensha-demo/`；查看Actions构建是否成功、浏览器Console首个错误和Network失败资源；dist引用应包含本次Pages基础路径 |
+| Pages显示404或旧版本 | Settings→Pages的Source应为GitHub Actions；检查最新main工作流的build和deploy是否成功，等待部署完成再刷新 |
+| Pages仍显示DEMO ONLY | 两个Actions Variables为空属于正常演示模式；启用共享数据库需按第6节建库并完整填写两项后重新运行工作流 |
 | Vercel构建找不到依赖或脚本 | 确认导入的是项目根目录、锁文件已提交、Install Command为npm ci、Build Command为npm run build |
 | Vercel部署仍显示本地演示 | 检查两个环境变量是否设在本次部署环境（Preview或Production）；保存后重新部署 |
 | Vercel页面404或缺少资源 | 确认Output Directory为dist，构建输出含index.html；当前入口为根路径，不直接访问不存在的/admin等路径 |
 | 朋友打开地址要求Vercel登录 | 检查Deployment Protection及该部署的共享权限；这与应用的Supabase登录不同 |
-| 手机不能打开开发地址 | 使用Network地址，检查同一网络和防火墙；不同网络测试使用Vercel HTTPS网址 |
+| 手机不能打开开发地址 | 使用Network地址，检查同一网络和防火墙；不同网络测试使用已成功发布的Pages HTTPS网址 |
 
 排查时只共享过滤后的错误摘要，避免展示密码、token、cookie、Authorization 请求头或包含隐私的数据导出。
 
@@ -319,8 +324,10 @@ D:\Codex test\xcx\
 ├─ .gitignore：忽略依赖、构建产物、实际环境配置和本地材料
 ├─ package.json：Vite 开发、构建、预览及原有检查/测试命令
 ├─ package-lock.json：锁定构建依赖，供 npm ci 使用
-├─ vite.config.js：Vite 开发与预览服务配置，保留现有根目录入口
-├─ vercel.json：Vite、安装、构建、dist 输出配置，无路由 rewrites
+├─ vite.config.js：开发根路径及构建/预览的Pages基础路径配置
+├─ vercel.json：保留的Vercel备用托管配置，无路由 rewrites
+├─ .github\workflows\
+│  └─ deploy-pages.yml：main推送或手动运行，检查、构建并部署dist到Pages
 ├─ css\
 │  ├─ main.css：全局组件、颜色、文字、表单、弹窗
 │  ├─ admin.css：后台侧栏、工作台和表格布局
@@ -343,6 +350,7 @@ D:\Codex test\xcx\
 │  ├─ domain.test.js：核心业务回归测试
 │  ├─ api.test.js：认证、公开配置与请求重试模拟测试
 │  ├─ config.test.js：模式选择、Publishable白名单及Vercel构建配置
+│  ├─ build-base.test.js：根路径、Pages前缀、改名、非法路径和开发服务回归
 │  └─ ui.test.js：本地模式提示与云端隐藏重置的回归
 ├─ tools\
 │  ├─ server.js：旧静态服务退役指引，提示改用Vite后退出
@@ -356,20 +364,23 @@ D:\Codex test\xcx\
 ├─ dist\：npm run build 生成的可部署静态产物，Git 忽略
 └─ _artifacts\：验收材料，不参与网页运行
    ├─ verification.md、screenshots\、logs\：原本地概念版验收记录
-   ├─ public-demo-verification.md：本轮构建、响应式与公开部署准备验收报告
-   ├─ public-demo-screenshots\：本轮浏览器真实操作截图
-   ├─ public-demo-logs\：本轮构建、回归、HTTP及浏览器日志
+   ├─ public-demo-verification.md：历史Vite构建、响应式与Vercel准备验收
+   ├─ public-demo-screenshots\：历史Vite生产预览截图
+   ├─ public-demo-logs\：历史Vite构建、回归、HTTP及浏览器日志
    ├─ vite-env-entry-check\run-AONUnh\checks.json：8项真实构建环境入口结果
-   └─ backups\before-public-demo-20261004-234917\：本轮修改前备份
+   ├─ github-pages-verification.md：本次Pages检查与发布状态报告
+   ├─ github-pages-screenshots\：本次浏览器验证截图
+   ├─ github-pages-logs\：本次构建、路径、工作流和访问检查日志
+   └─ backups\：before-public-demo-20261004-234917及before-github-pages-20261005-152506修改前备份
 ```
 
 用 VS Code 等文本编辑器打开整个 `D:\Codex test\xcx` 文件夹；“终端 → 新建终端”运行 `npm install` 和 `npm run dev`，再打开浏览器地址。该项目没有需单独打开的工程文件；生产构建使用 `npm run build`，只把 `dist` 交给静态托管服务。正常开发显示完整身份入口，正常预览应与开发版具有相同业务入口。
 
-源码为 `index.html`、`js\`、`css\`；配置为 `config.js`、`vite.config.js`、`vercel.json`、`package.json`、`.env.example` 和 `.gitignore`；`database\` 是云端部署脚本；`dist\` 是自动构建产物。源码、配置模板、锁文件、SQL、测试和 Markdown 文档可提交。`node_modules\`、`dist\`、`.env.local`、实际登录资料、私人 JSON 导出与备份不提交。验收报告和脱敏截图/日志可作为独立交付附件，不参与部署。
+源码为 `index.html`、`js\`、`css\`；配置为 `config.js`、`vite.config.js`、`vercel.json`、`package.json`、`.env.example` 和 `.gitignore`；`.github\workflows\` 为自动部署配置；`database\` 是云端部署脚本；`dist\` 是自动构建产物。源码、配置模板、锁文件、SQL、测试和 Markdown 文档可提交到当前Public仓库，其内容将公开可见。`node_modules\`、`dist\`、`.env.local`、实际登录资料、私人 JSON 导出与备份不提交。Pages仅上传dist作为站点文件；这不改变GitHub仓库源码公开的事实。验收报告和脱敏截图/日志可作为独立交付附件，不参与部署。
 
 素材来源为 `js\demo-data.js` 的虚构文字资料；封面、头像、门店环境由 `css\` 和页面代码绘制占位，不依赖下载图片。需求附件属于原始输入，不是运行依赖。
 
-原本地验收报告为 `_artifacts/verification.md`；原截图来源为本地浏览器实际操作，保存于 `_artifacts/screenshots/`，原命令与浏览器日志位于 `_artifacts/logs/`。本轮验收材料使用 `public-demo-` 前缀的目录和报告，实际执行结果以报告内容为准。修改前文档备份位于 `_artifacts/backups/before-public-demo-20261004-234917/`，不作为最终说明文件提交。源码修订记录以 `CHANGELOG.md` 为准。
+原本地验收报告为 `_artifacts/verification.md`，截图与日志分别位于 `_artifacts/screenshots/`、`_artifacts/logs/`。历史Vite阶段使用`public-demo-`材料；本次Pages阶段使用`github-pages-`报告、截图与日志，实际结果以对应报告为准。当前文档修改前备份为 `_artifacts/backups/before-github-pages-20261005-152506/`，保留历史备份；备份不作为最终说明文件提交。源码修订记录以 `CHANGELOG.md` 为准。
 
 ## 11. 当前边界
 
@@ -385,69 +396,19 @@ JavaScript 语法检查通过，29 项自动化测试通过（20 项业务、9 �
 
 以上为引入 Vite 前的本地验收记录，不代替本轮生产构建、指定手机视口和公网部署验证。
 
-## 13. GitHub 与 Vercel 部署
+## 13. 保留的 Vercel 备用方案
 
-### 13.1 保存到 GitHub 私有仓库
+本节保留先前的部署准备，当前发布采用第15节的Public仓库及GitHub Pages。`vercel.json`保持为备用配置，本次Pages工作流不读取它。
 
-1. 先运行第 8 节检查、测试和构建，核对 `.gitignore`；`git status` 不应包含 `node_modules`、`dist`、实际 `.env`、凭据或私人材料。
-2. 当前项目使用 Git 的 `main` 分支，提交作者仅配置在本仓库。换设备或新建本地仓库时，首次提交前需由使用者设置真实 Git 作者，不填猜测身份。
-3. 登录 GitHub 网页，点击新建 repository，选择 **Private**；采用已有本地仓库时不要生成与本地冲突的初始 README。
-4. 复制 GitHub 新仓库页面给出的远程仓库地址，按该页面“push an existing repository”命令连接和推送当前分支，不使用 force push。
-5. 当前没有 `gh` CLI；无需为网页导入安装它。若后续使用已安装的 GitHub CLI，应先执行 `gh auth login` 正常认证，不绕过登录。
+如另行选择Vercel，在其网页创建Project并导入当前Git仓库；Root Directory选择含`package.json`的目录，Framework Preset为Vite，Install Command为`npm ci`，Build Command为`npm run build`，Output Directory为`dist`。不要设置Pages专用的`PAGES_BASE_PATH`，该方案使用根路径。跨设备共享仍需第6节的Supabase建库、Auth绑定及两项公开配置，改配置后重新部署。参考：[Vercel的Vite部署说明](https://vercel.com/docs/frameworks/frontend/vite)、[Vercel环境变量](https://vercel.com/docs/environment-variables)。
 
-当前 Git remote 为空，没有推送到 GitHub。以上是操作说明，不代表已建立远程仓库。仓库继续迭代时提交小范围源码改动，依赖变更同时提交 `package.json` 与 `package-lock.json`。
+Vercel部署可能启用访问保护，不能用已登录的管理员电脑能打开来推断访客匿名可访问。当前需求是Pages网址匿名直达，不依赖Vercel账户。参考：[Vercel部署访问保护](https://vercel.com/docs/deployment-protection/methods-to-protect-deployments)。
 
-本地已有提交且尚未设置 `origin` 时，在项目根目录执行以下命令；用途是连接刚创建的 Private 仓库并首次推送。输入 GitHub 页面提供的仓库 HTTPS 地址，不输入带 token 或密码的 URL：
+页面没有`/admin`、`/sessions`或`/profile`路径路由，`vercel.json`无需SPA rewrites。旧`tools/server.js`已退役，直接执行只提示改用`npm run dev`并退出。
 
-```powershell
-Set-Location -LiteralPath 'D:\Codex test\xcx'
-$repositoryUrl = Read-Host '粘贴 GitHub Private 仓库的 HTTPS 地址'
-git remote add origin $repositoryUrl
-git push -u origin main
-```
+历史Vite准备阶段未推送或部署：当时Git远程为空，`gh`和`vercel`不在PATH；Vercel Dashboard跳转登录页，直接读取登录页超时。该记录不代表当前Git远程状态，也不构成已发布证据。
 
-Git 提示登录时按官方认证流程操作。已有 `origin` 时不要重复添加或随意更换远程；按当前仓库配置推送。
-
-### 13.2 在 Vercel 网页导入
-
-1. 登录 Vercel，创建新 Project，选择 Import Git Repository，连接 GitHub 并授权访问该 Private 仓库。
-2. 选择项目，Root Directory 设为含本项目 `package.json` 的目录。独立仓库通常是仓库根目录。
-3. 核对 Framework Preset 为 **Vite**，Install Command 为 `npm ci`，Build Command 为 `npm run build`，Output Directory 为 `dist`。
-4. 如需跨设备共享，在部署前添加下表两项环境变量。值来自同一个 Supabase 项目；选择本次使用的 Preview / Production 环境。数据库必须已完成第 6 节建库及 Auth 用户绑定。
-5. 点击 Deploy，等待构建与部署完成；打开部署详情提供的 **HTTPS** 地址，进行手机和电脑验收。
-
-| Vercel 变量 | 值来源 | 用途 |
-| --- | --- | --- |
-| `VITE_SUPABASE_URL` | Supabase 项目 URL | 同一共享数据库项目 |
-| `VITE_SUPABASE_PUBLISHABLE_KEY` | 该项目 Publishable Key | 浏览器公开应用 key，仍需 Auth 与服务器权限 |
-
-不配置这两项时网站仍可运行，但显示本设备演示模式，手机和电脑不会共享 localStorage。只配置一项属于配置错误。不要添加任何 `VITE_` 前缀的 Secret / Service Role Key。
-
-通过分支或 PR 部署的 Preview 用于先验收；`main` 作为 Production Branch 时，确认 Preview 正常后将对应改动合并到该分支触发 Production 部署。仅发布通过检查的版本。环境变量变更后执行 Redeploy，重新构建客户端。
-
-部署完成后在 Vercel Project 的 Domains 或 Deployment 详情中取得实际网址，通常形如 `https://项目名.vercel.app`。必须复制真实部署地址，不能把示例地址当作交付 URL。HTTPS 地址可从不同 Wi-Fi 或移动数据打开，不依赖电脑一直运行开发服务器。
-
-Preview 或其他部署可能启用 Deployment Protection。发给朋友前检查该网址的访问权限，必要时在部署界面提供可共享访问；不能以已登录的管理员电脑能打开，推断所有访客都能访问。参考：[Vercel 部署访问保护](https://vercel.com/docs/deployment-protection/methods-to-protect-deployments)。
-
-参考：[Vercel 的 Vite 部署说明](https://vercel.com/docs/frameworks/frontend/vite)、[Git 导入与私有仓库](https://vercel.com/docs/git)、[Vercel 环境变量](https://vercel.com/docs/environment-variables)。
-
-### 13.3 CLI 与路由说明
-
-当前 `gh` 和 `vercel` 均不在 PATH，本轮没有安装 CLI。浏览器访问 Vercel Dashboard 跳转至 `Login – Vercel`，当前会话需要登录；直接读取登录页超时，不能据此推断发布成功。登录后可按第13.2节网页导入。若以后已安装并登录 Vercel CLI，可在项目根目录使用 `vercel` 创建 Preview，核验后使用 `vercel --prod` 发布。安装或升级 CLI 需先由设备使用者确认。
-
-当前角色页面在同一入口切换，URL 为根路径，没有 `/admin`、`/sessions` 或 `/profile` 的客户端路径路由。`vercel.json` 不添加 SPA rewrites；这些地址不是受支持的直达页面，应从根入口使用导航。服务可能对未知路径返回首页或404，不能仅凭状态码判定路由或源码保护是否正确。未来实际加入路径路由时才增加对应 fallback。
-
-旧 `tools/server.js` 已退役，直接执行只会提示使用 `npm run dev` 并退出。不要把开发服务、`vite preview` 或整个源码目录暴露为正式站点。
-
-### 13.4 发布后验收与当前状态
-
-发布后需要从电脑、iPhone、Android、不同 Wi-Fi 与移动数据打开实际 HTTPS 网址；在约 390px 宽度完成玩家报名、余额与流水，以及管理员创建、结算、余额、会员、财务、提成和报名确认。375、390、430、768、1024、1440px 视口应无整页横向溢出，宽表仅在自身容器内滚动。
-
-跨设备共享验证应在同一 Supabase 项目中进行：在设备 A 保存一条获授权的业务修改，在设备 B 登录相应账号并刷新读取，确认服务器数据一致。验证时仅使用虚构资料。
-
-当前尚无 Supabase 项目，配置为空，云端接入准备已完成，创建项目后按第 6 节启用；未进行真实云端跨设备联调。尚无已核实的 Vercel 部署和公网 URL。生产构建和本轮手机检查通过，详见第 14 节；本地预览结果不代表公开发布完成。
-
-## 14. 本轮构建与生产预览核验（2026-10-05）
+## 14. 历史 Vite 构建与生产预览核验（2026-10-05）
 
 | 检查 | 实测结果 | 证据 |
 | --- | --- | --- |
@@ -460,7 +421,7 @@ Preview 或其他部署可能启用 Deployment Protection。发给朋友前检�
 | 生产预览 | `http://127.0.0.1:4173/`；6种宽度与390px流程通过 | `_artifacts/public-demo-logs/browser.json` |
 | 浏览器控制台 | 0警告、0错误 | `_artifacts/public-demo-logs/browser.json` |
 
-最终产物为 `dist/index.html`、`dist/assets/index-C8_M9cwC.css`（20.07kB，gzip 5.09kB）和 `dist/assets/index-BJ7XukKL.js`（80.63kB，gzip 27.12kB）。资源文件名含构建哈希，后续代码变更时会变化，不应在业务代码或部署配置中固定这些名称。
+该阶段产物为 `dist/index.html`、`dist/assets/index-C8_M9cwC.css`（20.07kB，gzip 5.09kB）和 `dist/assets/index-BJ7XukKL.js`（80.63kB，gzip 27.12kB）。资源文件名含构建哈希，后续代码或基础路径变化时会变化，不应在业务代码或部署配置中固定这些名称。
 
 生产预览检查375、390、430、768、1024、1440px六种宽度；玩家首页、个人中心、拼场列表、管理员工作台、5名玩家的长结算表单均无整页横向溢出。375/390/430px抽屉的原生Tab焦点循环、Escape关闭、遮罩点击及关闭后菜单焦点恢复通过，菜单点击区域44px。
 
@@ -468,7 +429,7 @@ Preview 或其他部署可能启用 Deployment Protection。发给朋友前检�
 
 作废上述结算后生成余额退款100元，余额变872，营业额恢复16896元、22场，刷新后数据保留。测试结束后通过界面重置演示数据，生产预览当前为初始数据。此过程没有真实支付或云端数据库写入。
 
-本轮实际修订25个文件：
+该阶段实际修订25个文件：
 
 - 构建与配置：`package.json`、`package-lock.json`、`config.js`、`vite.config.js`、`vercel.json`、`.env.example`、`.gitignore`、`index.html`。
 - 页面与数据交互：`js/api.js`、`js/app.js`、`js/ui.js`、`js/pages.js`。
@@ -477,4 +438,58 @@ Preview 或其他部署可能启用 Deployment Protection。发给朋友前检�
 - 工具：`tools/check.js`、`tools/server.js`。
 - 说明文档：`README.md`、`PROJECT_BRIEF.md`、`PAGE_MAP.md`、`DATA_MAP.md`、`CHANGELOG.md`。
 
-本轮完整报告为 `_artifacts/public-demo-verification.md`；采用的后台概览截图为 `_artifacts/public-demo-screenshots/admin-final-390.jpg` 和 `admin-final-desktop.jpg`，其余截图为各流程和视口的过程证据。备份路径及可提交分类见第10节。Git远程为空、未推送，Vercel当前会话需要登录，未发布；真实Supabase项目、跨设备共享和HTTPS公网部署均未实测。
+该阶段完整报告为 `_artifacts/public-demo-verification.md`；采用的后台概览截图为 `_artifacts/public-demo-screenshots/admin-final-390.jpg` 和 `admin-final-desktop.jpg`，其余截图为各流程和视口的过程证据。阶段结束时未推送或部署；当前Pages状态见第15节。真实Supabase项目与跨设备共享未实测。
+
+## 15. GitHub Actions + Pages 公开演示
+
+### 15.1 当前仓库与访问方式
+
+已创建的仓库为 [smz30301/jubensha-demo](https://github.com/smz30301/jubensha-demo)，可见性为 **Public**。本地`origin`已连接`https://github.com/smz30301/jubensha-demo.git`。Public仓库中的已提交源码、SQL、测试和文档公开可读；Pages工作流仅上传`dist`，网站静态文件与仓库源码是不同交付范围。
+
+预期网址为 [https://smz30301.github.io/jubensha-demo/](https://smz30301.github.io/jubensha-demo/)，当前尚未核实发布。发布成功后，访客直接打开此HTTPS网址，看到四种 **DEMO ONLY** 身份卡片并点击进入，不需要GitHub或Vercel账号。GitHub登录只用于仓库所有者推送、配置和查看管理界面。GitHub Pages负责托管静态站点，当前业务页面仍在同一个入口内切换。参考：[GitHub Pages概述](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)。
+
+### 15.2 设置并推送
+
+1. 仓库所有者打开仓库的 **Settings → Pages**，在 **Build and deployment → Source** 选择 **GitHub Actions**，无需选择`gh-pages`分支。参考：[Pages发布源设置](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)。
+2. 当前没有Supabase项目，保持两项Actions Variables为空，发布本设备演示。将来创建项目并完成第6节后，在 **Settings → Secrets and variables → Actions → Variables** 添加`VITE_SUPABASE_URL`和`VITE_SUPABASE_PUBLISHABLE_KEY`，只使用同一项目的HTTPS URL和公开Publishable Key。工作流从`vars`读取这两项；不添加数据库密码、Secret或Service Role Key。
+3. 在项目根目录先运行第8节检查，再提交本次源码、工作流、测试和文档；不提交`dist`、`node_modules`、`.env.local`、备份、私人导出或凭据。
+4. 在同一目录执行以下命令，用途是核对远程并推送`main`，不使用force：
+
+```powershell
+Set-Location -LiteralPath 'D:\Codex test\xcx'
+git remote -v
+git push -u origin main
+```
+
+当前已存在`origin`，不要重复添加。其他新检出目录确实尚无`origin`时，连接同一已创建仓库的命令为：
+
+```powershell
+Set-Location -LiteralPath 'D:\Codex test\xcx'
+git remote add origin https://github.com/smz30301/jubensha-demo.git
+```
+
+Git要求认证时按官方流程登录，不把token写入命令、远程URL或文件。网站访客访问Pages不需要执行任何Git命令。
+
+### 15.3 工作流与基础路径
+
+仓库的 **Actions → Deploy to GitHub Pages** 显示构建和部署进度；也可点击 **Run workflow**，选择`main`并手动运行。工作流由`main`推送和`workflow_dispatch`触发，使用Node.js 24与固定SHA的官方Actions：安装`npm ci`、执行`npm run check`和`npm test`、构建，再上传`dist`并部署到`github-pages`环境。仅main部署，构建失败不会发布。参考：[GitHub Pages自定义工作流](https://docs.github.com/en/pages/getting-started-with-github-pages/using-custom-workflows-with-github-pages)。
+
+`configure-pages`在构建前读取Pages的`base_path`，工作流将其加末尾斜线作为`PAGES_BASE_PATH`传给Vite。当前目标为`/jubensha-demo/`，业务代码没有固定仓库名；以后仓库名变化时由Pages元数据提供新前缀。此变量只控制构建和预览基础路径，不带`VITE_`前缀，不是客户端数据库配置；开发服务始终为`/`，普通无变量构建与预览仍为`/`。
+
+当前没有路径路由，无需新增`404.html`、SPA rewrites或第三方跳转。访问站点时保留仓库路径及末尾斜线，不直接访问不存在的`/admin`等地址。变量修改不会更新现有bundle：修改公开数据库Variables后重新运行工作流，等待构建和部署完成。
+
+### 15.4 发布后检查与当前结果
+
+工作流的build、deploy均成功后，使用部署输出的实际网址进行匿名访问核对。退出GitHub登录的浏览器或无痕窗口应直接显示身份卡片，资源请求成功且无登录跳转。再用iPhone、Android及微信内置浏览器实际打开网址，检查安全区、菜单、输入和长结算弹窗。桌面模拟视口不等于真实手机浏览器测试。
+
+手机与电脑各有自己的localStorage；新地址、不同浏览器或设备出现初始数据属于正常Demo行为。Pages与本地开发地址的origin不同，不迁移原本地数据；相同origin的不同路径不会自动隔离数据。只有配置同一Supabase项目并以获授权账号登录，才能共享服务器业务数据。
+
+本次本地已通过`npm ci`、语法检查和45/45自动化测试（原40项加5项基础路径回归）。普通构建使用根路径；`PAGES_BASE_PATH=/jubensha-demo/`构建成功，17个模块、无警告，HTML 0.88kB（gzip 0.57）、CSS 20.07kB（gzip 5.09）、JS 80.64kB（gzip 27.13）。子路径产物为`index-C2Ks4grH.js`和`index-C8_M9cwC.css`，名称仅作为本次证据。
+
+开发根入口和`http://127.0.0.1:4173/jubensha-demo/`生产预览、两个打包资源均返回200，无URL跳转；私有环境文件、SQL、README和测试路径返回同首页HTML，没有返回对应源码。dist只有HTML、JS、CSS三个文件。
+
+子路径浏览器实测375/390/430px：玩家首页、个人中心、管理工作台、4人长结算表单均无整页横向溢出；底部导航44px，后台抽屉Tab操作、Escape关闭和菜单焦点恢复通过。长结算内容高度3367–3391px，在三种宽度中确认按钮44px且可触达；只打开后取消，未保存新结算。控制台0警告/错误。当前文本和main可达提交历史的敏感模式与路径检查通过，无关材料排除于提交范围。
+
+当前远程已连接，尚未推送；Actions执行与匿名HTTPS发布尚未验证。真实Supabase、跨设备共享及真实Safari/微信手机浏览器未实测。报告为`_artifacts/github-pages-verification.md`，HTTP与浏览器日志分别为`_artifacts/github-pages-logs/http.json`、`_artifacts/github-pages-logs/browser.json`；截图使用`_artifacts/github-pages-screenshots/`。
+
+本次修订8个文件：`.github/workflows/deploy-pages.yml`、`vite.config.js`、`tests/build-base.test.js`、`README.md`、`PROJECT_BRIEF.md`、`PAGE_MAP.md`、`DATA_MAP.md`、`CHANGELOG.md`。`vercel.json`、`.env.example`和业务源码保持原配置与功能。

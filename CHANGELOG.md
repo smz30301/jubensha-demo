@@ -95,4 +95,39 @@
 
 日志位于 `_artifacts/public-demo-logs/`，采用的后台概览截图为 `_artifacts/public-demo-screenshots/admin-final-390.jpg` 和 `admin-final-desktop.jpg`。源码/配置/测试/文档可提交；dist由构建生成，验收材料可独立作为附件，备份与实际配置不提交。真实Supabase和公网HTTPS仍未联调。
 
-Git远程为空；gh/vercel不在PATH。本轮没有安装CLI、没有推送或发布。Vercel Dashboard当前浏览器会话跳转至登录页，需要登录；直接读取登录页超时不作为已发布证据。
+该阶段结束时Git远程为空；gh/vercel不在PATH，没有安装CLI、推送或发布。Vercel Dashboard浏览器会话跳转至登录页，需要登录；直接读取登录页超时不作为已发布证据。当前远程及发布状态以下述Pages阶段为准。
+
+## 2026-10-05：GitHub Actions + Pages 公开演示
+
+### 范围与文件
+
+采用已创建的Public仓库`smz30301/jubensha-demo`，目标是让手机访客无需GitHub/Vercel账号直接进入DEMO ONLY身份入口。本地origin已绑定`https://github.com/smz30301/jubensha-demo.git`；公开源码与仅上传dist的站点文件范围分别说明。
+
+本次修订8个文件：
+
+- `.github/workflows/deploy-pages.yml`：main推送及手动运行触发；Node24安装、检查、测试、构建；固定SHA的官方Actions，仅dist上传部署。
+- `vite.config.js`：构建/预览读取Pages元数据生成的`PAGES_BASE_PATH`，开发固定`/`，未配置时普通构建/预览为`/`；不固定业务仓库名。
+- `tests/build-base.test.js`：5项路径回归，覆盖根路径、仓库改名、开发固定路径、非法路径拒绝及客户端变量范围。
+- `README.md`：当前Public仓库、Pages配置/推送/进度/匿名入口、公开Variables、错误排查及交付目录，Vercel改为备用历史方案。
+- `PROJECT_BRIEF.md`、`PAGE_MAP.md`、`DATA_MAP.md`、`CHANGELOG.md`：本次范围、子路径入口、数据边界和实际验证状态。
+
+未调整业务模型或页面功能；`vercel.json`保留备用，`.env.example`仍为原两项公开空值模板，无新增依赖。
+
+### 本地检查与部署状态
+
+- `npm ci`：成功，15个依赖安装、16个包审计、0漏洞。
+- `npm run check`：通过。
+- `npm test`：45/45通过，原40项及新增5项路径回归。
+- 普通无变量构建：通过，资源引用为根路径`/assets/`。
+- Pages子路径构建：通过，17模块，无构建警告；HTML0.88kB（gzip0.57）、CSS20.07kB（gzip5.09）、JS80.64kB（gzip27.13）。本次资源为`index-C2Ks4grH.js`及`index-C8_M9cwC.css`。
+- HTTP：开发根入口、`4173/jubensha-demo/`预览及两个资源200、无跳转；私有路径返回同首页HTML且不含对应源码。dist仅HTML/JS/CSS三个文件。
+- 子路径浏览器：375/390/430px的玩家首页、个人中心、管理员工作台、4人长结算无横向溢出；底栏44px，抽屉Tab操作、Escape和焦点恢复通过；长结算内容3367–3391px，确认按钮44px且可触达。仅打开后取消，未保存结算，控制台0警告/错误。
+- 敏感模式及路径：87个文本文件和main可达37个blob检查通过，没有候选；无关材料不进入main提交范围。
+
+当前尚未推送，Actions构建部署和匿名HTTPS入口尚未核实。预期网址为`https://smz30301.github.io/jubensha-demo/`，不作为已发布地址。Supabase项目尚未创建，真实云端共享、真实Safari和微信手机浏览器未实测；桌面视口或本地构建不代替这些验证。
+
+### 备份与交付材料
+
+修改前五份文档保存在`_artifacts/backups/before-github-pages-20261005-152506/`。本次报告为`_artifacts/github-pages-verification.md`，日志为`_artifacts/github-pages-logs/`，截图为`_artifacts/github-pages-screenshots/`；原`public-demo-`材料保留为Vite/Vercel准备阶段历史证据。
+
+工作流、源码配置、测试和五份文档可提交到Public仓库；dist由Actions构建上传，依赖、实际环境文件、私人导出、备份与本地验收过程材料不提交。
