@@ -122,9 +122,9 @@
 - Pages子路径构建：通过，17模块，无构建警告；HTML0.88kB（gzip0.57）、CSS20.07kB（gzip5.09）、JS80.64kB（gzip27.13）。本次资源为`index-C2Ks4grH.js`及`index-C8_M9cwC.css`。
 - HTTP：开发根入口、`4173/jubensha-demo/`预览及两个资源200、无跳转；私有路径返回同首页HTML且不含对应源码。dist仅HTML/JS/CSS三个文件。
 - 子路径浏览器：375/390/430px的玩家首页、个人中心、管理员工作台、4人长结算无横向溢出；底栏44px，抽屉Tab操作、Escape和焦点恢复通过；长结算内容3367–3391px，确认按钮44px且可触达。仅打开后取消，未保存结算，控制台0警告/错误。
-- 敏感模式及路径：87个文本文件和main可达37个blob检查通过，没有候选；无关材料不进入main提交范围。
+- 敏感模式及路径：本地文本与提交后main可达历史复核通过，没有候选；无关材料不进入main提交范围。
 
-当前尚未推送，Actions构建部署和匿名HTTPS入口尚未核实。预期网址为`https://smz30301.github.io/jubensha-demo/`，不作为已发布地址。Supabase项目尚未创建，真实云端共享、真实Safari和微信手机浏览器未实测；桌面视口或本地构建不代替这些验证。
+部署实现已在main本地提交`17447b9`（8个文件）。首次推送因缺少可用GitHub认证失败，未上传远程；当前浏览器访问Pages设置显示Page not found，未取得设置操作权限。发布需仓库所有者正常登录、推送main并将Settings→Pages→Source设为GitHub Actions。Actions构建部署和匿名HTTPS入口尚未核实。预期网址为`https://smz30301.github.io/jubensha-demo/`，不作为已发布地址。Supabase项目尚未创建，真实云端共享、真实Safari和微信手机浏览器未实测；桌面视口或本地构建不代替这些验证。
 
 ### 备份与交付材料
 

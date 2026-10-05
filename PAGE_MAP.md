@@ -100,4 +100,4 @@ DM 不拥有门店财务统计、玩家余额、会员修改和其他 DM 工资�
 
 子路径生产预览375/390/430px实测玩家首页、个人中心、管理员工作台和4人长结算无整页横向溢出。底栏点击区域44px，后台抽屉Tab操作、Escape关闭及返回菜单焦点通过；卡片和表格可读。长结算滚动内容高度3367–3391px，三种宽度中确认按钮44px且位于视口内；打开后取消，未保存新结算。浏览器0警告/错误。
 
-匿名HTTPS访问、Actions部署和真实Safari/微信手机浏览器尚未实测；本次报告为`_artifacts/github-pages-verification.md`，截图为`_artifacts/github-pages-screenshots/`，HTTP与浏览器证据为`_artifacts/github-pages-logs/http.json`、`_artifacts/github-pages-logs/browser.json`。
+部署实现已本地提交`17447b9`，推送因缺少GitHub认证失败，未上传远程。仓库所有者需正常登录、推送main并将Pages Source设为GitHub Actions；当前浏览器无法操作Pages设置。匿名HTTPS访问、Actions部署和真实Safari/微信手机浏览器尚未实测；本次报告为`_artifacts/github-pages-verification.md`，截图为`_artifacts/github-pages-screenshots/`，HTTP与浏览器证据为`_artifacts/github-pages-logs/http.json`、`_artifacts/github-pages-logs/browser.json`。

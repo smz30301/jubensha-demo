@@ -444,7 +444,7 @@ Vercel部署可能启用访问保护，不能用已登录的管理员电脑能�
 
 ### 15.1 当前仓库与访问方式
 
-已创建的仓库为 [smz30301/jubensha-demo](https://github.com/smz30301/jubensha-demo)，可见性为 **Public**。本地`origin`已连接`https://github.com/smz30301/jubensha-demo.git`。Public仓库中的已提交源码、SQL、测试和文档公开可读；Pages工作流仅上传`dist`，网站静态文件与仓库源码是不同交付范围。
+已创建的仓库为 [smz30301/jubensha-demo](https://github.com/smz30301/jubensha-demo)，可见性为 **Public**。本地`origin`已连接`https://github.com/smz30301/jubensha-demo.git`。推送后，Public仓库中的源码、SQL、测试和文档公开可读；Pages工作流仅上传`dist`，网站静态文件与仓库源码是不同交付范围。
 
 预期网址为 [https://smz30301.github.io/jubensha-demo/](https://smz30301.github.io/jubensha-demo/)，当前尚未核实发布。发布成功后，访客直接打开此HTTPS网址，看到四种 **DEMO ONLY** 身份卡片并点击进入，不需要GitHub或Vercel账号。GitHub登录只用于仓库所有者推送、配置和查看管理界面。GitHub Pages负责托管静态站点，当前业务页面仍在同一个入口内切换。参考：[GitHub Pages概述](https://docs.github.com/en/pages/getting-started-with-github-pages/what-is-github-pages)。
 
@@ -490,6 +490,6 @@ Git要求认证时按官方流程登录，不把token写入命令、远程URL或
 
 子路径浏览器实测375/390/430px：玩家首页、个人中心、管理工作台、4人长结算表单均无整页横向溢出；底部导航44px，后台抽屉Tab操作、Escape关闭和菜单焦点恢复通过。长结算内容高度3367–3391px，在三种宽度中确认按钮44px且可触达；只打开后取消，未保存新结算。控制台0警告/错误。当前文本和main可达提交历史的敏感模式与路径检查通过，无关材料排除于提交范围。
 
-当前远程已连接，尚未推送；Actions执行与匿名HTTPS发布尚未验证。真实Supabase、跨设备共享及真实Safari/微信手机浏览器未实测。报告为`_artifacts/github-pages-verification.md`，HTTP与浏览器日志分别为`_artifacts/github-pages-logs/http.json`、`_artifacts/github-pages-logs/browser.json`；截图使用`_artifacts/github-pages-screenshots/`。
+部署实现已在main本地提交`17447b9`（8个文件）。首次推送因没有可用的GitHub认证失败，未上传到远程；提交后main的敏感模式及路径复核通过。当前浏览器无法操作仓库Pages设置，发布还需仓库所有者正常登录并执行第15.2节的`git push -u origin main`，将Settings→Pages→Source设为GitHub Actions。Actions执行与匿名HTTPS发布尚未验证。真实Supabase、跨设备共享及真实Safari/微信手机浏览器未实测。报告为`_artifacts/github-pages-verification.md`，HTTP与浏览器日志分别为`_artifacts/github-pages-logs/http.json`、`_artifacts/github-pages-logs/browser.json`；截图使用`_artifacts/github-pages-screenshots/`。
 
 本次修订8个文件：`.github/workflows/deploy-pages.yml`、`vite.config.js`、`tests/build-base.test.js`、`README.md`、`PROJECT_BRIEF.md`、`PAGE_MAP.md`、`DATA_MAP.md`、`CHANGELOG.md`。`vercel.json`、`.env.example`和业务源码保持原配置与功能。

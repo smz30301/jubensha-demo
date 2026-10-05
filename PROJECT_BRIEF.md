@@ -86,6 +86,6 @@ Vite生产构建通过，17个模块，无构建警告；40项自动化测试、
 
 本地npm ci、语法检查及45/45测试通过；普通根路径和Pages子路径构建均通过，子路径构建17模块、无警告。开发根入口、子路径生产预览及两个资源HTTP200、无跳转；dist仅三个站点文件，私有路径不返回对应源码。375/390/430px实测四类页面无横向溢出，抽屉焦点与长结算按钮可触达，控制台0警告/错误；未保存新结算。main可达提交历史与本地文本敏感模式检查通过，无关材料不提交。
 
-当前尚未推送，也未验证Actions部署和匿名HTTPS；真实Safari、微信手机浏览器及Supabase共享数据未实测。两项公开云端配置为空，网站使用本设备演示，接入云端需先建立Supabase项目并完成Auth/RLS流程。
+部署实现已在main本地提交`17447b9`（8个文件），首次推送因缺少GitHub认证失败，未上传远程。提交后main敏感模式及路径检查通过。发布需仓库所有者正常登录、推送main并将Pages Source设为GitHub Actions，当前浏览器未取得Pages设置操作权限。Actions部署和匿名HTTPS未验证；真实Safari、微信手机浏览器及Supabase共享数据未实测。两项公开云端配置为空，网站使用本设备演示，接入云端需先建立Supabase项目并完成Auth/RLS流程。
 
 本次范围为工作流、Vite基础路径、5项路径测试和五份文档，共8个文件，不调整业务、UI或数据模型。修改前备份为`_artifacts/backups/before-github-pages-20261005-152506/`；本次报告、日志和截图使用`_artifacts/github-pages-verification.md`、`_artifacts/github-pages-logs/`、`_artifacts/github-pages-screenshots/`。
